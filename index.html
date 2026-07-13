@@ -17,13 +17,13 @@
       --accent-hover: #7ab3e0;
       --success: #3d9b6a;
       --danger: #c45c5c;
-      --chip: #2a3a52;
-      --unallocated-bg: #141c28;
       --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
       --radius: 10px;
       --font: "Segoe UI", system-ui, -apple-system, sans-serif;
       --btn-primary-text: #0a0e14;
       --theme-btn-bg: #243044;
+      --table-header-bg: #141c28;
+      --cell-hover: rgba(91, 159, 212, 0.08);
     }
 
     [data-theme="light"] {
@@ -37,11 +37,11 @@
       --accent-hover: #1f6aa0;
       --success: #2a8a55;
       --danger: #c04040;
-      --chip: #eef2f8;
-      --unallocated-bg: #f7f9fc;
       --shadow: 0 4px 16px rgba(20, 40, 70, 0.08);
       --btn-primary-text: #ffffff;
       --theme-btn-bg: #e8eef5;
+      --table-header-bg: #eef2f8;
+      --cell-hover: rgba(43, 124, 184, 0.06);
     }
 
     * {
@@ -154,7 +154,8 @@
       margin-bottom: 0.3rem;
     }
 
-    .field input {
+    .field input,
+    .field textarea {
       width: 100%;
       padding: 0.55rem 0.7rem;
       border: 1px solid var(--border);
@@ -164,10 +165,20 @@
       font-size: 0.95rem;
       outline: none;
       transition: border-color 0.15s;
+      font-family: inherit;
     }
 
-    .field input:focus {
+    .field input:focus,
+    .field textarea:focus {
       border-color: var(--accent);
+    }
+
+    .field textarea {
+      font-size: 0.8rem;
+      font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+      resize: vertical;
+      min-height: 88px;
+      line-height: 1.35;
     }
 
     .field input[type="number"] {
@@ -188,7 +199,7 @@
       padding: 0.55rem 1rem;
       font-size: 0.9rem;
       font-weight: 500;
-      transition: background 0.15s, opacity 0.15s;
+      transition: background 0.15s, opacity 0.15s, border-color 0.15s;
     }
 
     button.primary {
@@ -215,6 +226,11 @@
 
     button.secondary:hover {
       border-color: var(--accent);
+    }
+
+    button.secondary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
 
     button.danger-btn {
@@ -247,26 +263,6 @@
       gap: 0.5rem;
     }
 
-    .field textarea {
-      width: 100%;
-      padding: 0.55rem 0.7rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 0.8rem;
-      font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
-      outline: none;
-      resize: vertical;
-      min-height: 88px;
-      line-height: 1.35;
-      transition: border-color 0.15s;
-    }
-
-    .field textarea:focus {
-      border-color: var(--accent);
-    }
-
     .status-msg {
       font-size: 0.78rem;
       margin-top: 0.55rem;
@@ -282,6 +278,62 @@
       color: var(--danger);
     }
 
+    .collection-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-top: 0.75rem;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .collection-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.55rem 0.65rem;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .collection-item.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .collection-item-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      word-break: break-word;
+      line-height: 1.25;
+    }
+
+    .collection-item-meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .collection-item-actions {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .collection-item-actions button {
+      flex: 1;
+      min-width: 0;
+      padding: 0.35rem 0.5rem;
+      font-size: 0.78rem;
+    }
+
+    .collection-empty {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 0.75rem 0.25rem;
+    }
+
     .main {
       display: flex;
       flex-direction: column;
@@ -289,165 +341,166 @@
       min-width: 0;
     }
 
-    .board-wrap {
-      overflow-x: auto;
-      padding-bottom: 0.25rem;
+    .matrix-wrap {
+      overflow: auto;
+      max-width: 100%;
     }
 
-    .board {
-      display: flex;
-      gap: 0.75rem;
-      min-height: 280px;
-      align-items: stretch;
+    .matrix-empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 3rem 1.5rem;
     }
 
-    .column {
-      flex: 0 0 200px;
-      background: var(--surface);
+    .matrix {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 360px;
+    }
+
+    .matrix th,
+    .matrix td {
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      display: flex;
-      flex-direction: column;
-      min-height: 280px;
-      transition: border-color 0.15s, background 0.15s;
+      padding: 0.55rem 0.6rem;
+      vertical-align: middle;
     }
 
-    .column.drag-over {
-      border-color: var(--accent);
+    .matrix thead th {
+      background: var(--table-header-bg);
+      font-weight: 600;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .matrix .corner {
+      text-align: left;
+      min-width: 160px;
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      background: var(--table-header-bg);
+    }
+
+    .matrix .option-head {
+      min-width: 110px;
+    }
+
+    .matrix .option-name {
+      word-break: break-word;
+      line-height: 1.25;
+      margin-bottom: 0.25rem;
+    }
+
+    .matrix .option-score {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+
+    .matrix .indicator-cell {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: var(--surface);
+      min-width: 160px;
+      max-width: 240px;
+    }
+
+    .matrix tbody tr:hover .indicator-cell,
+    .matrix tbody tr:hover td {
+      background: var(--cell-hover);
+    }
+
+    .matrix tbody tr:hover .indicator-cell {
       background: var(--surface2);
     }
 
-    .column.unallocated {
-      border-style: dashed;
-      background: var(--unallocated-bg);
-    }
-
-    .column-header {
-      padding: 0.85rem 0.9rem;
-      border-bottom: 1px solid var(--border);
-      text-align: center;
-    }
-
-    .column-title {
-      font-size: 0.95rem;
-      font-weight: 600;
-      word-break: break-word;
-    }
-
-    .column-score {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--accent);
-      margin-top: 0.2rem;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .column.unallocated .column-score {
-      color: var(--muted);
-    }
-
-    .column-body {
-      flex: 1;
-      padding: 0.6rem;
+    .matrix .indicator-row {
       display: flex;
-      flex-direction: column;
-      gap: 0.45rem;
-      min-height: 120px;
-    }
-
-    .column-footer {
-      padding: 0.4rem 0.6rem 0.6rem;
-      text-align: right;
-    }
-
-    .chip {
-      background: var(--chip);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.5rem 0.65rem;
-      cursor: grab;
-      user-select: none;
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 0.5rem;
-      transition: opacity 0.15s, box-shadow 0.15s, transform 0.1s;
+      gap: 0.35rem;
     }
 
-    .chip:active {
-      cursor: grabbing;
-    }
-
-    .chip.dragging {
-      opacity: 0.4;
-    }
-
-    .chip.editing {
-      cursor: default;
-      flex-wrap: wrap;
-    }
-
-    .chip-name {
-      font-size: 0.85rem;
-      word-break: break-word;
+    .matrix .indicator-name {
       flex: 1;
       min-width: 0;
+      word-break: break-word;
+      font-size: 0.9rem;
+      cursor: text;
       border-radius: 4px;
-      padding: 0.1rem 0.15rem;
-      margin: -0.1rem -0.15rem;
+      padding: 0.15rem 0.25rem;
     }
 
-    .chip-name:hover,
-    .chip-weight:hover {
+    .matrix .indicator-name:hover {
       outline: 1px dashed var(--border);
     }
 
-    .chip-weight {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--accent);
-      background: rgba(91, 159, 212, 0.15);
-      padding: 0.15rem 0.45rem;
-      border-radius: 4px;
-      white-space: nowrap;
+    .matrix .score-input {
+      width: 100%;
+      max-width: 88px;
+      margin: 0 auto;
+      display: block;
+      text-align: center;
+      padding: 0.4rem 0.35rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
       font-variant-numeric: tabular-nums;
-      cursor: text;
-    }
-
-    .chip-name {
-      cursor: text;
-    }
-
-    .chip-edit-input {
+      outline: none;
       font-family: inherit;
-      font-size: 0.85rem;
+      -moz-appearance: textfield;
+    }
+
+    .matrix .score-input:focus {
+      border-color: var(--accent);
+    }
+
+    .matrix .score-input::-webkit-outer-spin-button,
+    .matrix .score-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .matrix .totals-row th,
+    .matrix .totals-row td {
+      background: var(--table-header-bg);
+      font-weight: 700;
+    }
+
+    .matrix .totals-label {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      text-align: left;
+      background: var(--table-header-bg);
+    }
+
+    .matrix .total-cell {
+      text-align: center;
+      color: var(--accent);
+      font-size: 1.1rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .inline-edit {
+      width: 100%;
+      font-family: inherit;
+      font-size: 0.9rem;
       color: var(--text);
       background: var(--bg);
       border: 1px solid var(--accent);
       border-radius: 4px;
       padding: 0.2rem 0.35rem;
       outline: none;
-      min-width: 0;
-    }
-
-    .chip-edit-input.name {
-      flex: 1;
-      width: 100%;
-    }
-
-    .chip-edit-input.weight {
-      width: 3.5rem;
-      font-weight: 700;
-      color: var(--accent);
-      text-align: center;
-    }
-
-    .empty-hint {
-      color: var(--muted);
-      font-size: 0.8rem;
-      text-align: center;
-      padding: 1.5rem 0.5rem;
-      pointer-events: none;
     }
 
     .chart-card h2 {
@@ -530,7 +583,7 @@
   <header>
     <div class="header-text">
       <h1>Decision Helper</h1>
-      <p>Create weighted advantages and options, then drag advantages into options</p>
+      <p>Create indicators and options, then score each option per indicator in the table</p>
     </div>
     <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
       <span class="icon" id="theme-icon">☀️</span>
@@ -541,21 +594,43 @@
   <div class="layout">
     <aside class="sidebar">
       <section class="card">
-        <h2>New advantage</h2>
-        <form id="factor-form">
+        <h2>Scheme</h2>
+        <div class="field" style="margin-bottom: 0">
+          <label for="scheme-name">Name</label>
+          <input
+            id="scheme-name"
+            type="text"
+            placeholder="e.g. Which apartment to buy"
+            autocomplete="off"
+          />
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Collection</h2>
+        <div class="btn-row">
+          <button type="button" class="primary" id="save-collection-btn">
+            Save to collection
+          </button>
+        </div>
+        <div class="collection-list" id="collection-list"></div>
+        <div class="status-msg" id="collection-status" role="status"></div>
+      </section>
+
+      <section class="card">
+        <h2>New indicator</h2>
+        <form id="indicator-form">
           <div class="field">
-            <label for="factor-name">Name</label>
-            <input id="factor-name" type="text" placeholder="e.g. price" required autocomplete="off" />
+            <label for="indicator-name">Name</label>
+            <input
+              id="indicator-name"
+              type="text"
+              placeholder="e.g. price, location"
+              required
+              autocomplete="off"
+            />
           </div>
-          <div class="field">
-            <label for="factor-weight">Weight (points)</label>
-            <input id="factor-weight" type="number" min="1" step="1" value="1" required />
-          </div>
-          <div class="field">
-            <label for="factor-blocks">Blocks</label>
-            <input id="factor-blocks" type="number" min="1" step="1" value="1" required title="How many copies to create — one per option that can share this advantage" />
-          </div>
-          <button type="submit" class="primary">Add advantage</button>
+          <button type="submit" class="primary">Add indicator</button>
         </form>
       </section>
 
@@ -564,7 +639,13 @@
         <form id="option-form">
           <div class="field">
             <label for="option-name">Name</label>
-            <input id="option-name" type="text" placeholder="e.g. apartment A" required autocomplete="off" />
+            <input
+              id="option-name"
+              type="text"
+              placeholder="e.g. apartment A"
+              required
+              autocomplete="off"
+            />
           </div>
           <button type="submit" class="primary">Add option</button>
         </form>
@@ -577,7 +658,11 @@
         </div>
         <div class="field" style="margin-top: 0.85rem; margin-bottom: 0.5rem">
           <label for="import-json">Paste JSON to import</label>
-          <textarea id="import-json" placeholder='{"options":[...],"factors":[...]}' spellcheck="false"></textarea>
+          <textarea
+            id="import-json"
+            placeholder='{"schemeName":"...","indicators":[...],"options":[...],"scores":{...}}'
+            spellcheck="false"
+          ></textarea>
         </div>
         <div class="btn-row">
           <button type="button" class="primary" id="import-btn">Import</button>
@@ -588,9 +673,10 @@
     </aside>
 
     <main class="main">
-      <div class="board-wrap">
-        <div class="board" id="board"></div>
-      </div>
+      <section class="card">
+        <h2>Score matrix</h2>
+        <div class="matrix-wrap" id="matrix-wrap"></div>
+      </section>
 
       <section class="card chart-card">
         <h2>Score distribution</h2>
@@ -601,8 +687,19 @@
   </div>
 
   <script>
-    /** @typedef {{ id: string, name: string, weight: number, optionId: string | null }} Factor */
-    /** @typedef {{ id: string, name: string }} Option */
+    /**
+     * @typedef {{ id: string, name: string }} Indicator
+     * @typedef {{ id: string, name: string }} Option
+     * @typedef {Record<string, Record<string, number>>} ScoreMatrix
+     * @typedef {{
+     *   id: string,
+     *   savedAt: string,
+     *   schemeName: string,
+     *   indicators: Indicator[],
+     *   options: Option[],
+     *   scores: ScoreMatrix
+     * }} CollectionEntry
+     */
 
     // —— Theme ——
     const themeToggle = document.getElementById("theme-toggle");
@@ -620,7 +717,6 @@
     function applyTheme(theme) {
       document.documentElement.setAttribute("data-theme", theme);
       localStorage.setItem("dh-theme", theme);
-      // Button shows the *other* theme (what you'll switch to)
       if (theme === "dark") {
         themeIcon.textContent = "☀️";
         themeLabel.textContent = "Light";
@@ -633,155 +729,28 @@
     applyTheme(getPreferredTheme());
 
     themeToggle.addEventListener("click", () => {
-      const current = document.documentElement.getAttribute("data-theme") || "dark";
+      const current =
+        document.documentElement.getAttribute("data-theme") || "dark";
       applyTheme(current === "dark" ? "light" : "dark");
     });
 
-    const UNALLOCATED = null;
-    const STATE_KEY = "dh-state";
+    // —— State ——
+    const STATE_KEY = "dh:state";
+    const COLLECTION_KEY = "dh:collection";
+    const SCHEMA_VERSION = 1;
 
-    /** @type {Factor[]} */
-    let factors = [];
+    /** @type {Indicator[]} */
+    let indicators = [];
     /** @type {Option[]} */
     let options = [];
-
-    /**
-     * Parse and normalize a decision payload.
-     * @param {unknown} data
-     * @returns {{ factors: Factor[], options: Option[] }}
-     */
-    function parseDecisionData(data) {
-      if (!data || typeof data !== "object") {
-        throw new Error("Invalid JSON: expected an object");
-      }
-      const obj = /** @type {Record<string, unknown>} */ (data);
-      if (!Array.isArray(obj.options) && !Array.isArray(obj.factors)) {
-        throw new Error('Expected "options" and/or "factors" arrays');
-      }
-
-      /** @type {Option[]} */
-      const nextOptions = [];
-      const optionIds = new Set();
-
-      if (Array.isArray(obj.options)) {
-        for (const o of obj.options) {
-          if (
-            !o ||
-            typeof o !== "object" ||
-            typeof o.id !== "string" ||
-            typeof o.name !== "string" ||
-            !o.name.trim()
-          ) {
-            continue;
-          }
-          if (optionIds.has(o.id)) continue;
-          nextOptions.push({ id: o.id, name: String(o.name) });
-          optionIds.add(o.id);
-        }
-      }
-
-      /** @type {Factor[]} */
-      const nextFactors = [];
-      const factorIds = new Set();
-
-      if (Array.isArray(obj.factors)) {
-        for (const f of obj.factors) {
-          if (
-            !f ||
-            typeof f !== "object" ||
-            typeof f.id !== "string" ||
-            typeof f.name !== "string" ||
-            !f.name.trim() ||
-            !Number.isFinite(Number(f.weight)) ||
-            Number(f.weight) <= 0
-          ) {
-            continue;
-          }
-          if (factorIds.has(f.id)) continue;
-          let optionId =
-            f.optionId === undefined || f.optionId === null
-              ? null
-              : String(f.optionId);
-          if (optionId !== null && !optionIds.has(optionId)) {
-            optionId = null;
-          }
-          nextFactors.push({
-            id: f.id,
-            name: String(f.name),
-            weight: Math.round(Number(f.weight)),
-            optionId,
-          });
-          factorIds.add(f.id);
-        }
-      }
-
-      return { factors: nextFactors, options: nextOptions };
-    }
-
-    /** @param {{ factors: Factor[], options: Option[] }} state */
-    function applyState(state) {
-      factors = state.factors;
-      options = state.options;
-    }
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STATE_KEY);
-        if (!raw) return;
-        applyState(parseDecisionData(JSON.parse(raw)));
-      } catch {
-        factors = [];
-        options = [];
-      }
-    }
-
-    function getExportPayload() {
-      return {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        options,
-        factors,
-      };
-    }
-
-    function saveState() {
-      try {
-        localStorage.setItem(
-          STATE_KEY,
-          JSON.stringify({ factors, options })
-        );
-      } catch {
-        // Quota exceeded or private mode — ignore
-      }
-    }
-
-    let dragFactorId = null;
-
-    const boardEl = document.getElementById("board");
-    const chartEl = document.getElementById("chart");
-    const winnerEl = document.getElementById("winner");
-    const factorForm = document.getElementById("factor-form");
-    const optionForm = document.getElementById("option-form");
-    const exportBtn = document.getElementById("export-btn");
-    const importBtn = document.getElementById("import-btn");
-    const deleteSchemeBtn = document.getElementById("delete-scheme-btn");
-    const importJson = document.getElementById("import-json");
-    const shareStatus = document.getElementById("share-status");
-
-    let statusTimer = null;
-
-    /** @param {string} text @param {"ok"|"err"|""} kind */
-    function setShareStatus(text, kind) {
-      shareStatus.textContent = text;
-      shareStatus.className = "status-msg" + (kind ? " " + kind : "");
-      clearTimeout(statusTimer);
-      if (text) {
-        statusTimer = setTimeout(() => {
-          shareStatus.textContent = "";
-          shareStatus.className = "status-msg";
-        }, 3500);
-      }
-    }
+    /** @type {ScoreMatrix} scores[indicatorId][optionId] */
+    let scores = {};
+    /** @type {string} */
+    let schemeName = "";
+    /** @type {string | null} */
+    let activeCollectionId = null;
+    /** @type {CollectionEntry[]} */
+    let collection = [];
 
     const COLORS = [
       "#5b9fd4",
@@ -794,275 +763,545 @@
       "#d47a5b",
     ];
 
+    const matrixWrap = document.getElementById("matrix-wrap");
+    const chartEl = document.getElementById("chart");
+    const winnerEl = document.getElementById("winner");
+    const indicatorForm = document.getElementById("indicator-form");
+    const optionForm = document.getElementById("option-form");
+    const schemeNameInput = document.getElementById("scheme-name");
+    const exportBtn = document.getElementById("export-btn");
+    const importBtn = document.getElementById("import-btn");
+    const deleteSchemeBtn = document.getElementById("delete-scheme-btn");
+    const saveCollectionBtn = document.getElementById("save-collection-btn");
+    const importJson = document.getElementById("import-json");
+    const shareStatus = document.getElementById("share-status");
+
     function uid() {
       return Math.random().toString(36).slice(2, 10);
     }
 
-    function scoreFor(optionId) {
-      return factors
-        .filter((f) => f.optionId === optionId)
-        .reduce((sum, f) => sum + f.weight, 0);
+    function emptyState() {
+      return {
+        schemeName: "",
+        indicators: [],
+        options: [],
+        scores: {},
+      };
     }
 
-    function factorsIn(optionId) {
-      return factors.filter((f) => f.optionId === optionId);
+    function isEmptyBoard() {
+      return (
+        !schemeName.trim() &&
+        indicators.length === 0 &&
+        options.length === 0
+      );
     }
 
-    function renderBoard() {
-      boardEl.innerHTML = "";
+    /** @param {string} indicatorId @param {string} optionId */
+    function getScore(indicatorId, optionId) {
+      const row = scores[indicatorId];
+      if (!row) return 0;
+      const v = row[optionId];
+      return Number.isFinite(v) ? v : 0;
+    }
 
-      // Unassigned
-      boardEl.appendChild(createColumn(null, "Unassigned", true));
-
-      for (const opt of options) {
-        boardEl.appendChild(createColumn(opt.id, opt.name, false));
-      }
+    /** @param {string} optionId */
+    function scoreForOption(optionId) {
+      return indicators.reduce(
+        (sum, ind) => sum + getScore(ind.id, optionId),
+        0
+      );
     }
 
     /**
-     * @param {string | null} optionId
-     * @param {string} title
-     * @param {boolean} isUnallocated
+     * Keep scores only for known indicators/options; fill missing with 0.
+     * @param {Indicator[]} inds
+     * @param {Option[]} opts
+     * @param {ScoreMatrix} raw
+     * @returns {ScoreMatrix}
      */
-    function createColumn(optionId, title, isUnallocated) {
-      const col = document.createElement("div");
-      col.className = "column" + (isUnallocated ? " unallocated" : "");
-      col.dataset.optionId = optionId === null ? "" : optionId;
+    function normalizeScores(inds, opts, raw) {
+      /** @type {ScoreMatrix} */
+      const next = {};
+      const src = raw && typeof raw === "object" ? raw : {};
+      for (const ind of inds) {
+        next[ind.id] = {};
+        const srcRow =
+          src[ind.id] && typeof src[ind.id] === "object" ? src[ind.id] : {};
+        for (const opt of opts) {
+          const v = Number(srcRow[opt.id]);
+          next[ind.id][opt.id] = Number.isFinite(v) ? v : 0;
+        }
+      }
+      return next;
+    }
 
-      const score = scoreFor(optionId);
-      const items = factorsIn(optionId);
+    /**
+     * @param {unknown} data
+     * @returns {{
+     *   schemeName: string,
+     *   indicators: Indicator[],
+     *   options: Option[],
+     *   scores: ScoreMatrix
+     * }}
+     */
+    function parseDecisionData(data) {
+      if (!data || typeof data !== "object") {
+        throw new Error("Invalid JSON: expected an object");
+      }
+      const obj = /** @type {Record<string, unknown>} */ (data);
 
-      const header = document.createElement("div");
-      header.className = "column-header";
-      header.innerHTML =
-        `<div class="column-title"></div>` +
-        `<div class="column-score">${score}</div>`;
-      header.querySelector(".column-title").textContent = title;
-      col.appendChild(header);
+      const hasOptions = Array.isArray(obj.options);
+      const hasIndicators = Array.isArray(obj.indicators);
+      const hasName = typeof obj.schemeName === "string";
+      if (!hasOptions && !hasIndicators && !hasName) {
+        throw new Error(
+          'Expected "schemeName" and/or "options"/"indicators"'
+        );
+      }
 
-      const body = document.createElement("div");
-      body.className = "column-body";
+      const nextSchemeName =
+        typeof obj.schemeName === "string" ? obj.schemeName : "";
 
-      if (items.length === 0) {
-        const hint = document.createElement("div");
-        hint.className = "empty-hint";
-        hint.textContent = isUnallocated
-          ? "Add advantages on the left"
-          : "Drop here";
-        body.appendChild(hint);
-      } else {
-        for (const f of items) {
-          body.appendChild(createChip(f));
+      /** @type {Option[]} */
+      const nextOptions = [];
+      const optionIds = new Set();
+      if (Array.isArray(obj.options)) {
+        for (const o of obj.options) {
+          if (
+            !o ||
+            typeof o !== "object" ||
+            typeof o.id !== "string" ||
+            typeof o.name !== "string" ||
+            !String(o.name).trim()
+          ) {
+            continue;
+          }
+          if (optionIds.has(o.id)) continue;
+          nextOptions.push({ id: o.id, name: String(o.name) });
+          optionIds.add(o.id);
         }
       }
 
-      col.appendChild(body);
+      /** @type {Indicator[]} */
+      const nextIndicators = [];
+      const indicatorIds = new Set();
+      if (Array.isArray(obj.indicators)) {
+        for (const item of obj.indicators) {
+          if (
+            !item ||
+            typeof item !== "object" ||
+            typeof item.id !== "string" ||
+            typeof item.name !== "string" ||
+            !String(item.name).trim()
+          ) {
+            continue;
+          }
+          if (indicatorIds.has(item.id)) continue;
+          nextIndicators.push({ id: item.id, name: String(item.name) });
+          indicatorIds.add(item.id);
+        }
+      }
 
-      if (!isUnallocated) {
-        const footer = document.createElement("div");
-        footer.className = "column-footer";
+      const rawScores =
+        obj.scores && typeof obj.scores === "object" ? obj.scores : {};
+
+      return {
+        schemeName: String(nextSchemeName),
+        indicators: nextIndicators,
+        options: nextOptions,
+        scores: normalizeScores(nextIndicators, nextOptions, rawScores),
+      };
+    }
+
+    /**
+     * @param {{
+     *   schemeName?: string,
+     *   indicators: Indicator[],
+     *   options: Option[],
+     *   scores: ScoreMatrix
+     * }} state
+     * @param {{ collectionId?: string | null }} [meta]
+     */
+    function applyState(state, meta) {
+      schemeName =
+        typeof state.schemeName === "string" ? state.schemeName : "";
+      indicators = state.indicators.map((i) => ({ ...i }));
+      options = state.options.map((o) => ({ ...o }));
+      scores = normalizeScores(indicators, options, state.scores || {});
+      if (meta && "collectionId" in meta) {
+        activeCollectionId = meta.collectionId ?? null;
+      }
+      syncSchemeNameInput();
+      updateDocumentTitle();
+    }
+
+    function syncSchemeNameInput() {
+      if (schemeNameInput.value !== schemeName) {
+        schemeNameInput.value = schemeName;
+      }
+    }
+
+    function updateDocumentTitle() {
+      const trimmed = schemeName.trim();
+      document.title = trimmed
+        ? trimmed + " — Decision Helper"
+        : "Decision Helper";
+    }
+
+    function snapshotCurrent() {
+      return {
+        schemeName,
+        indicators: indicators.map((i) => ({ ...i })),
+        options: options.map((o) => ({ ...o })),
+        scores: normalizeScores(indicators, options, scores),
+      };
+    }
+
+    function loadCollection() {
+      try {
+        const raw = localStorage.getItem(COLLECTION_KEY);
+        if (!raw) {
+          collection = [];
+          return;
+        }
+        const data = JSON.parse(raw);
+        if (!Array.isArray(data)) {
+          collection = [];
+          return;
+        }
+        /** @type {CollectionEntry[]} */
+        const next = [];
+        for (const item of data) {
+          if (!item || typeof item !== "object" || typeof item.id !== "string") {
+            continue;
+          }
+          try {
+            const parsed = parseDecisionData(item);
+            next.push({
+              id: item.id,
+              savedAt:
+                typeof item.savedAt === "string"
+                  ? item.savedAt
+                  : new Date().toISOString(),
+              schemeName: parsed.schemeName,
+              indicators: parsed.indicators,
+              options: parsed.options,
+              scores: parsed.scores,
+            });
+          } catch {
+            // skip broken entry
+          }
+        }
+        collection = next;
+      } catch {
+        collection = [];
+      }
+    }
+
+    function saveCollection() {
+      try {
+        localStorage.setItem(COLLECTION_KEY, JSON.stringify(collection));
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STATE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        applyState(parseDecisionData(data), {
+          collectionId:
+            typeof data.activeCollectionId === "string"
+              ? data.activeCollectionId
+              : null,
+        });
+      } catch {
+        applyState(emptyState(), { collectionId: null });
+      }
+    }
+
+    function getExportPayload() {
+      return {
+        version: SCHEMA_VERSION,
+        exportedAt: new Date().toISOString(),
+        schemeName,
+        indicators,
+        options,
+        scores,
+      };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(
+          STATE_KEY,
+          JSON.stringify({
+            version: SCHEMA_VERSION,
+            schemeName,
+            indicators,
+            options,
+            scores,
+            activeCollectionId,
+          })
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function formatSavedAt(iso) {
+      try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return "";
+        return d.toLocaleString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } catch {
+        return "";
+      }
+    }
+
+    function displaySchemeTitle(name) {
+      const t = (name || "").trim();
+      return t || "Untitled scheme";
+    }
+
+    // —— Status helpers ——
+    let shareStatusTimer = null;
+    let collectionStatusTimer = null;
+
+    /** @param {string} text @param {"ok"|"err"|""} kind */
+    function setShareStatus(text, kind) {
+      shareStatus.textContent = text;
+      shareStatus.className = "status-msg" + (kind ? " " + kind : "");
+      clearTimeout(shareStatusTimer);
+      if (text) {
+        shareStatusTimer = setTimeout(() => {
+          shareStatus.textContent = "";
+          shareStatus.className = "status-msg";
+        }, 3500);
+      }
+    }
+
+    /** @param {string} text @param {"ok"|"err"|""} kind */
+    function setCollectionStatus(text, kind) {
+      const el = document.getElementById("collection-status");
+      el.textContent = text;
+      el.className = "status-msg" + (kind ? " " + kind : "");
+      clearTimeout(collectionStatusTimer);
+      if (text) {
+        collectionStatusTimer = setTimeout(() => {
+          el.textContent = "";
+          el.className = "status-msg";
+        }, 3500);
+      }
+    }
+
+    // —— Matrix UI ——
+    function renderMatrix() {
+      matrixWrap.innerHTML = "";
+
+      if (indicators.length === 0 && options.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "matrix-empty";
+        empty.textContent =
+          "Add indicators and options on the left, then enter weights in the table";
+        matrixWrap.appendChild(empty);
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.className = "matrix";
+
+      // Header
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+
+      const corner = document.createElement("th");
+      corner.className = "corner";
+      corner.textContent = "Indicator";
+      headRow.appendChild(corner);
+
+      for (const opt of options) {
+        const th = document.createElement("th");
+        th.className = "option-head";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "option-name";
+        nameEl.textContent = opt.name;
+        nameEl.title = "Double-click to rename";
+        nameEl.addEventListener("dblclick", () =>
+          startTextEdit(nameEl, opt.name, (next) => {
+            renameOption(opt.id, next);
+          })
+        );
+
+        const scoreEl = document.createElement("div");
+        scoreEl.className = "option-score";
+        scoreEl.textContent = String(scoreForOption(opt.id));
+
         const del = document.createElement("button");
         del.type = "button";
         del.className = "ghost";
         del.textContent = "Delete";
         del.title = "Delete option";
-        del.addEventListener("click", () => removeOption(optionId));
-        footer.appendChild(del);
-        col.appendChild(footer);
+        del.addEventListener("click", () => removeOption(opt.id));
+
+        th.appendChild(nameEl);
+        th.appendChild(scoreEl);
+        th.appendChild(del);
+        headRow.appendChild(th);
       }
 
-      // Drop targets
-      col.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        col.classList.add("drag-over");
-      });
-      col.addEventListener("dragleave", (e) => {
-        if (!col.contains(e.relatedTarget)) {
-          col.classList.remove("drag-over");
-        }
-      });
-      col.addEventListener("drop", (e) => {
-        e.preventDefault();
-        col.classList.remove("drag-over");
-        const id = e.dataTransfer.getData("text/plain") || dragFactorId;
-        if (!id) return;
-        moveFactor(id, optionId);
-      });
+      if (options.length === 0) {
+        const th = document.createElement("th");
+        th.className = "option-head";
+        th.style.color = "var(--muted)";
+        th.style.fontWeight = "500";
+        th.textContent = "Add options →";
+        headRow.appendChild(th);
+      }
 
-      return col;
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      // Body
+      const tbody = document.createElement("tbody");
+
+      if (indicators.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = Math.max(options.length, 1) + 1;
+        td.className = "matrix-empty";
+        td.style.border = "none";
+        td.textContent = "Add indicators to create rows";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+      } else {
+        for (const ind of indicators) {
+          const tr = document.createElement("tr");
+
+          const nameTd = document.createElement("td");
+          nameTd.className = "indicator-cell";
+
+          const row = document.createElement("div");
+          row.className = "indicator-row";
+
+          const nameEl = document.createElement("span");
+          nameEl.className = "indicator-name";
+          nameEl.textContent = ind.name;
+          nameEl.title = "Double-click to rename";
+          nameEl.addEventListener("dblclick", () =>
+            startTextEdit(nameEl, ind.name, (next) => {
+              renameIndicator(ind.id, next);
+            })
+          );
+
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "ghost";
+          del.textContent = "×";
+          del.title = "Delete indicator";
+          del.addEventListener("click", () => removeIndicator(ind.id));
+
+          row.appendChild(nameEl);
+          row.appendChild(del);
+          nameTd.appendChild(row);
+          tr.appendChild(nameTd);
+
+          if (options.length === 0) {
+            const td = document.createElement("td");
+            td.style.color = "var(--muted)";
+            td.style.fontSize = "0.8rem";
+            td.style.textAlign = "center";
+            td.textContent = "—";
+            tr.appendChild(td);
+          } else {
+            for (const opt of options) {
+              const td = document.createElement("td");
+              const input = document.createElement("input");
+              input.className = "score-input";
+              input.type = "number";
+              input.step = "any";
+              input.value = String(getScore(ind.id, opt.id));
+              input.setAttribute("aria-label", ind.name + " / " + opt.name);
+              input.addEventListener("change", () => {
+                setScore(ind.id, opt.id, input.value);
+              });
+              input.addEventListener("focus", () => input.select());
+              td.appendChild(input);
+              tr.appendChild(td);
+            }
+          }
+
+          tbody.appendChild(tr);
+        }
+      }
+
+      // Totals footer
+      if (indicators.length > 0 && options.length > 0) {
+        const foot = document.createElement("tr");
+        foot.className = "totals-row";
+        const label = document.createElement("th");
+        label.className = "totals-label";
+        label.textContent = "Total";
+        foot.appendChild(label);
+        for (const opt of options) {
+          const td = document.createElement("td");
+          td.className = "total-cell";
+          td.textContent = String(scoreForOption(opt.id));
+          foot.appendChild(td);
+        }
+        tbody.appendChild(foot);
+      }
+
+      table.appendChild(tbody);
+      matrixWrap.appendChild(table);
     }
 
     /**
-     * @param {string} factorId
-     * @param {{ name?: string, weight?: number }} patch
+     * @param {HTMLElement} el
+     * @param {string} current
+     * @param {(next: string) => void} onCommit
      */
-    function updateFactor(factorId, patch) {
-      const f = factors.find((x) => x.id === factorId);
-      if (!f) return false;
+    function startTextEdit(el, current, onCommit) {
+      const input = document.createElement("input");
+      input.className = "inline-edit";
+      input.type = "text";
+      input.value = current;
+      el.replaceWith(input);
+      input.focus();
+      input.select();
 
-      if (typeof patch.name === "string") {
-        const name = patch.name.trim();
-        if (!name) return false;
-        f.name = name;
-      }
-
-      if (patch.weight !== undefined) {
-        const w = Math.round(Number(patch.weight));
-        if (!Number.isFinite(w) || w <= 0) return false;
-        f.weight = w;
-      }
-
-      render();
-      return true;
-    }
-
-    /** @param {Factor} f */
-    function createChip(f) {
-      const chip = document.createElement("div");
-      chip.className = "chip";
-      chip.draggable = true;
-      chip.dataset.factorId = f.id;
-
-      const name = document.createElement("span");
-      name.className = "chip-name";
-      name.textContent = f.name;
-      name.title = "Double-click to edit name";
-
-      const weight = document.createElement("span");
-      weight.className = "chip-weight";
-      weight.textContent = String(f.weight);
-      weight.title = "Double-click to edit weight";
-
-      const del = document.createElement("button");
-      del.type = "button";
-      del.className = "ghost";
-      del.textContent = "×";
-      del.title = "Delete advantage";
-      del.addEventListener("click", (e) => {
-        e.stopPropagation();
-        removeFactor(f.id);
-      });
-
-      chip.appendChild(name);
-      chip.appendChild(weight);
-      chip.appendChild(del);
-
-      /**
-       * @param {"name"|"weight"} field
-       * @param {HTMLElement} displayEl
-       */
-      function startEdit(field, displayEl) {
-        if (chip.classList.contains("editing")) return;
-
-        chip.classList.add("editing");
-        chip.draggable = false;
-
-        const input = document.createElement("input");
-        input.className =
-          "chip-edit-input " + (field === "name" ? "name" : "weight");
-        input.type = field === "weight" ? "number" : "text";
-        if (field === "weight") {
-          input.min = "1";
-          input.step = "1";
-          input.value = String(f.weight);
+      let done = false;
+      function finish(commit) {
+        if (done) return;
+        done = true;
+        const next = input.value.trim();
+        if (commit && next && next !== current) {
+          onCommit(next);
         } else {
-          input.value = f.name;
-        }
-
-        displayEl.replaceWith(input);
-        input.focus();
-        input.select();
-
-        let finished = false;
-
-        function cleanup() {
-          chip.classList.remove("editing");
-          chip.draggable = true;
-        }
-
-        function cancel() {
-          if (finished) return;
-          finished = true;
-          cleanup();
           render();
         }
-
-        function commit() {
-          if (finished) return;
-          finished = true;
-
-          if (field === "name") {
-            const next = input.value.trim();
-            if (!next || next === f.name) {
-              cleanup();
-              render();
-              return;
-            }
-            updateFactor(f.id, { name: next });
-          } else {
-            const next = Math.round(Number(input.value));
-            if (!Number.isFinite(next) || next <= 0 || next === f.weight) {
-              cleanup();
-              render();
-              return;
-            }
-            updateFactor(f.id, { weight: next });
-          }
-        }
-
-        input.addEventListener("keydown", (e) => {
-          e.stopPropagation();
-          if (e.key === "Enter") {
-            e.preventDefault();
-            commit();
-          } else if (e.key === "Escape") {
-            e.preventDefault();
-            cancel();
-          }
-        });
-
-        input.addEventListener("mousedown", (e) => e.stopPropagation());
-        input.addEventListener("click", (e) => e.stopPropagation());
-        input.addEventListener("dragstart", (e) => e.preventDefault());
-
-        // Defer blur so a click on delete / elsewhere still works
-        input.addEventListener("blur", () => {
-          setTimeout(commit, 0);
-        });
       }
 
-      name.addEventListener("dblclick", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        startEdit("name", name);
-      });
-
-      weight.addEventListener("dblclick", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        startEdit("weight", weight);
-      });
-
-      chip.addEventListener("dragstart", (e) => {
-        if (chip.classList.contains("editing")) {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
           e.preventDefault();
-          return;
+          finish(true);
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          finish(false);
         }
-        dragFactorId = f.id;
-        chip.classList.add("dragging");
-        e.dataTransfer.setData("text/plain", f.id);
-        e.dataTransfer.effectAllowed = "move";
       });
-      chip.addEventListener("dragend", () => {
-        dragFactorId = null;
-        chip.classList.remove("dragging");
-        document.querySelectorAll(".column.drag-over").forEach((el) => {
-          el.classList.remove("drag-over");
-        });
-      });
-
-      return chip;
+      input.addEventListener("blur", () => finish(true));
     }
 
     function renderChart() {
@@ -1077,15 +1316,13 @@
         return;
       }
 
-      const scores = options.map((o) => ({
-        id: o.id,
+      const scoreList = options.map((o) => ({
         name: o.name,
-        score: scoreFor(o.id),
+        score: scoreForOption(o.id),
       }));
+      const max = Math.max(...scoreList.map((s) => s.score), 1);
 
-      const max = Math.max(...scores.map((s) => s.score), 1);
-
-      scores.forEach((s, i) => {
+      scoreList.forEach((s, i) => {
         const group = document.createElement("div");
         group.className = "bar-group";
 
@@ -1109,9 +1346,9 @@
         chartEl.appendChild(group);
       });
 
-      const maxScore = Math.max(...scores.map((s) => s.score));
+      const maxScore = Math.max(...scoreList.map((s) => s.score));
       if (maxScore > 0) {
-        const leaders = scores.filter((s) => s.score === maxScore);
+        const leaders = scoreList.filter((s) => s.score === maxScore);
         if (leaders.length === 1) {
           winnerEl.innerHTML =
             "Leader: <strong></strong> — " + maxScore + " pts";
@@ -1125,64 +1362,228 @@
             " pts each";
         }
       } else {
-        winnerEl.textContent = "Assign advantages to options";
+        winnerEl.textContent = "Enter weights in the matrix cells";
+      }
+    }
+
+    function renderCollection() {
+      const listEl = document.getElementById("collection-list");
+      listEl.innerHTML = "";
+
+      if (collection.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "collection-empty";
+        empty.textContent = "No saved schemes yet";
+        listEl.appendChild(empty);
+        return;
+      }
+
+      const sorted = collection
+        .slice()
+        .sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+
+      for (const entry of sorted) {
+        const item = document.createElement("div");
+        item.className =
+          "collection-item" +
+          (entry.id === activeCollectionId ? " active" : "");
+
+        const title = document.createElement("div");
+        title.className = "collection-item-title";
+        title.textContent = displaySchemeTitle(entry.schemeName);
+
+        const meta = document.createElement("div");
+        meta.className = "collection-item-meta";
+        meta.textContent =
+          entry.options.length +
+          " options · " +
+          entry.indicators.length +
+          " indicators" +
+          (entry.savedAt ? " · " + formatSavedAt(entry.savedAt) : "");
+
+        const actions = document.createElement("div");
+        actions.className = "collection-item-actions";
+
+        const openBtn = document.createElement("button");
+        openBtn.type = "button";
+        openBtn.className = "secondary";
+        openBtn.textContent =
+          entry.id === activeCollectionId ? "Current" : "Open";
+        openBtn.disabled = entry.id === activeCollectionId;
+        openBtn.addEventListener("click", () => openFromCollection(entry.id));
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "danger-btn";
+        delBtn.textContent = "Remove";
+        delBtn.addEventListener("click", () => removeFromCollection(entry.id));
+
+        actions.appendChild(openBtn);
+        actions.appendChild(delBtn);
+        item.appendChild(title);
+        item.appendChild(meta);
+        item.appendChild(actions);
+        listEl.appendChild(item);
       }
     }
 
     function render() {
-      renderBoard();
+      renderMatrix();
       renderChart();
+      renderCollection();
       saveState();
     }
 
-    /** @param {string} factorId @param {string | null} optionId */
-    function moveFactor(factorId, optionId) {
-      const f = factors.find((x) => x.id === factorId);
-      if (!f) return;
-      if (f.optionId === optionId) return;
-      f.optionId = optionId;
+    // —— Mutations ——
+    function setScore(indicatorId, optionId, raw) {
+      const n = Number(raw);
+      const value = Number.isFinite(n) ? n : 0;
+      if (!scores[indicatorId]) scores[indicatorId] = {};
+      scores[indicatorId][optionId] = value;
       render();
     }
 
-    function removeFactor(id) {
-      factors = factors.filter((f) => f.id !== id);
+    function renameIndicator(id, name) {
+      const ind = indicators.find((i) => i.id === id);
+      if (!ind) return;
+      ind.name = name;
+      render();
+    }
+
+    function renameOption(id, name) {
+      const opt = options.find((o) => o.id === id);
+      if (!opt) return;
+      opt.name = name;
+      render();
+    }
+
+    function removeIndicator(id) {
+      indicators = indicators.filter((i) => i.id !== id);
+      delete scores[id];
       render();
     }
 
     function removeOption(id) {
-      // Advantages from deleted option go back to Unassigned
-      factors.forEach((f) => {
-        if (f.optionId === id) f.optionId = UNALLOCATED;
-      });
       options = options.filter((o) => o.id !== id);
+      for (const indId of Object.keys(scores)) {
+        if (scores[indId]) delete scores[indId][id];
+      }
       render();
     }
 
-    factorForm.addEventListener("submit", (e) => {
+    function saveToCollection() {
+      if (isEmptyBoard()) {
+        setCollectionStatus("Nothing to save", "err");
+        return;
+      }
+
+      const snap = snapshotCurrent();
+      const now = new Date().toISOString();
+      const existingIdx = activeCollectionId
+        ? collection.findIndex((e) => e.id === activeCollectionId)
+        : -1;
+
+      if (existingIdx >= 0) {
+        collection[existingIdx] = {
+          ...collection[existingIdx],
+          savedAt: now,
+          schemeName: snap.schemeName,
+          indicators: snap.indicators,
+          options: snap.options,
+          scores: snap.scores,
+        };
+        saveCollection();
+        renderCollection();
+        setCollectionStatus("Scheme updated in collection", "ok");
+        return;
+      }
+
+      const id = uid();
+      collection.push({
+        id,
+        savedAt: now,
+        schemeName: snap.schemeName,
+        indicators: snap.indicators,
+        options: snap.options,
+        scores: snap.scores,
+      });
+      activeCollectionId = id;
+      saveCollection();
+      saveState();
+      renderCollection();
+      setCollectionStatus("Scheme saved to collection", "ok");
+    }
+
+    function openFromCollection(id) {
+      const entry = collection.find((e) => e.id === id);
+      if (!entry) return;
+
+      if (activeCollectionId !== id && !isEmptyBoard()) {
+        const ok = window.confirm(
+          "Open this scheme? Unsaved changes to the current board will be lost."
+        );
+        if (!ok) return;
+      }
+
+      applyState(
+        {
+          schemeName: entry.schemeName,
+          indicators: entry.indicators,
+          options: entry.options,
+          scores: entry.scores,
+        },
+        { collectionId: entry.id }
+      );
+      render();
+      setCollectionStatus(
+        "Opened “" + displaySchemeTitle(entry.schemeName) + "”",
+        "ok"
+      );
+    }
+
+    function removeFromCollection(id) {
+      const entry = collection.find((e) => e.id === id);
+      if (!entry) return;
+      const ok = window.confirm(
+        "Remove “" +
+          displaySchemeTitle(entry.schemeName) +
+          "” from the collection?"
+      );
+      if (!ok) return;
+
+      collection = collection.filter((e) => e.id !== id);
+      if (activeCollectionId === id) {
+        activeCollectionId = null;
+        saveState();
+      }
+      saveCollection();
+      renderCollection();
+      setCollectionStatus("Removed from collection", "ok");
+    }
+
+    // —— Events ——
+    schemeNameInput.addEventListener("input", () => {
+      schemeName = schemeNameInput.value;
+      updateDocumentTitle();
+      saveState();
+    });
+
+    saveCollectionBtn.addEventListener("click", () => saveToCollection());
+
+    indicatorForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      const nameInput = document.getElementById("factor-name");
-      const weightInput = document.getElementById("factor-weight");
-      const blocksInput = document.getElementById("factor-blocks");
+      const nameInput = document.getElementById("indicator-name");
       const name = nameInput.value.trim();
-      const weight = Number(weightInput.value);
-      const blocks = Math.round(Number(blocksInput.value));
+      if (!name) return;
 
-      if (!name || !Number.isFinite(weight) || weight <= 0) return;
-      if (!Number.isFinite(blocks) || blocks < 1) return;
-
-      const w = Math.round(weight);
-      for (let i = 0; i < blocks; i++) {
-        factors.push({
-          id: uid(),
-          name,
-          weight: w,
-          optionId: UNALLOCATED,
-        });
+      const id = uid();
+      indicators.push({ id, name });
+      scores[id] = {};
+      for (const opt of options) {
+        scores[id][opt.id] = 0;
       }
 
       nameInput.value = "";
-      weightInput.value = "1";
-      blocksInput.value = "1";
       nameInput.focus();
       render();
     });
@@ -1193,7 +1594,13 @@
       const name = nameInput.value.trim();
       if (!name) return;
 
-      options.push({ id: uid(), name });
+      const id = uid();
+      options.push({ id, name });
+      for (const ind of indicators) {
+        if (!scores[ind.id]) scores[ind.id] = {};
+        scores[ind.id][id] = 0;
+      }
+
       nameInput.value = "";
       nameInput.focus();
       render();
@@ -1205,7 +1612,6 @@
         if (navigator.clipboard && navigator.clipboard.writeText) {
           await navigator.clipboard.writeText(json);
         } else {
-          // Fallback for older browsers / non-secure contexts
           importJson.value = json;
           importJson.focus();
           importJson.select();
@@ -1222,18 +1628,18 @@
     });
 
     deleteSchemeBtn.addEventListener("click", () => {
-      if (options.length === 0 && factors.length === 0) {
+      if (isEmptyBoard()) {
         setShareStatus("Nothing to delete", "err");
         return;
       }
       const ok = window.confirm(
-        "Delete the entire scheme? All options and advantages will be removed."
+        "Clear the current board? Name, indicators, options, and scores will be removed. (Collection is kept.)"
       );
       if (!ok) return;
-      applyState({ factors: [], options: [] });
+      applyState(emptyState(), { collectionId: null });
       importJson.value = "";
       render();
-      setShareStatus("Scheme deleted", "ok");
+      setShareStatus("Scheme cleared", "ok");
     });
 
     importBtn.addEventListener("click", () => {
@@ -1253,28 +1659,34 @@
 
       try {
         const state = parseDecisionData(data);
-        if (state.options.length === 0 && state.factors.length === 0) {
-          setShareStatus("No valid options or advantages found", "err");
+        if (
+          state.options.length === 0 &&
+          state.indicators.length === 0 &&
+          !state.schemeName.trim()
+        ) {
+          setShareStatus("No valid scheme data found", "err");
           return;
         }
 
-        const hasCurrent = options.length > 0 || factors.length > 0;
-        if (hasCurrent) {
+        if (!isEmptyBoard()) {
           const ok = window.confirm(
             "Import will replace your current board. Continue?"
           );
           if (!ok) return;
         }
 
-        applyState(state);
+        applyState(state, { collectionId: null });
         render();
         importJson.value = "";
         setShareStatus(
           "Imported: " +
+            (state.schemeName.trim()
+              ? "“" + state.schemeName.trim() + "”, "
+              : "") +
             state.options.length +
             " options, " +
-            state.factors.length +
-            " advantages",
+            state.indicators.length +
+            " indicators",
           "ok"
         );
       } catch (err) {
@@ -1285,7 +1697,15 @@
       }
     });
 
+    // —— Boot ——
+    loadCollection();
     loadState();
+    if (
+      activeCollectionId &&
+      !collection.some((e) => e.id === activeCollectionId)
+    ) {
+      activeCollectionId = null;
+    }
     render();
   </script>
 </body>
