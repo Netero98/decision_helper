@@ -217,6 +217,19 @@
       border-color: var(--accent);
     }
 
+    button.danger-btn {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      width: 100%;
+      opacity: 0.9;
+    }
+
+    button.danger-btn:hover {
+      background: rgba(196, 64, 64, 0.12);
+      opacity: 1;
+    }
+
     button.ghost {
       background: transparent;
       color: var(--muted);
@@ -521,6 +534,7 @@
         </div>
         <div class="btn-row">
           <button type="button" class="primary" id="import-btn">Import</button>
+          <button type="button" class="danger-btn" id="delete-scheme-btn">Delete scheme</button>
         </div>
         <div class="status-msg" id="share-status" role="status"></div>
       </section>
@@ -703,6 +717,7 @@
     const optionForm = document.getElementById("option-form");
     const exportBtn = document.getElementById("export-btn");
     const importBtn = document.getElementById("import-btn");
+    const deleteSchemeBtn = document.getElementById("delete-scheme-btn");
     const importJson = document.getElementById("import-json");
     const shareStatus = document.getElementById("share-status");
 
@@ -1024,6 +1039,21 @@
         importJson.select();
         setShareStatus("Could not copy — JSON is in the field below", "err");
       }
+    });
+
+    deleteSchemeBtn.addEventListener("click", () => {
+      if (options.length === 0 && factors.length === 0) {
+        setShareStatus("Nothing to delete", "err");
+        return;
+      }
+      const ok = window.confirm(
+        "Delete the entire scheme? All options and advantages will be removed."
+      );
+      if (!ok) return;
+      applyState({ factors: [], options: [] });
+      importJson.value = "";
+      render();
+      setShareStatus("Scheme deleted", "ok");
     });
 
     importBtn.addEventListener("click", () => {
