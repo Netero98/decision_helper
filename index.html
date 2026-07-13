@@ -441,6 +441,71 @@
       outline: 1px dashed var(--border);
     }
 
+    .matrix .importance-col {
+      width: 72px;
+      min-width: 72px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+      background: var(--table-header-bg);
+    }
+
+    .matrix .importance-cell {
+      text-align: center;
+      background: var(--surface);
+      width: 72px;
+    }
+
+    .matrix tbody tr:hover .importance-cell {
+      background: var(--surface2);
+    }
+
+    .matrix .importance-input {
+      width: 100%;
+      max-width: 56px;
+      margin: 0 auto;
+      display: block;
+      text-align: center;
+      padding: 0.35rem 0.2rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--accent);
+      font-size: 0.9rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      outline: none;
+      font-family: inherit;
+      -moz-appearance: textfield;
+    }
+
+    .matrix .importance-input:focus {
+      border-color: var(--accent);
+    }
+
+    .matrix .importance-input::-webkit-outer-spin-button,
+    .matrix .importance-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .matrix .importance-share {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .matrix-hint {
+      margin-top: 0.75rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
     .matrix .score-input {
       width: 100%;
       max-width: 88px;
@@ -583,7 +648,7 @@
   <header>
     <div class="header-text">
       <h1>Decision Helper</h1>
-      <p>Create indicators and options, then score each option per indicator in the table</p>
+      <p>Indicators have importance; cells rate each option. Total = Σ (importance × score)</p>
     </div>
     <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
       <span class="icon" id="theme-icon">☀️</span>
@@ -630,6 +695,18 @@
               autocomplete="off"
             />
           </div>
+          <div class="field">
+            <label for="indicator-weight">Importance</label>
+            <input
+              id="indicator-weight"
+              type="number"
+              min="0"
+              step="any"
+              value="1"
+              required
+              title="How much this criterion matters. High importance stays dominant even if you add many minor indicators."
+            />
+          </div>
           <button type="submit" class="primary">Add indicator</button>
         </form>
       </section>
@@ -660,7 +737,7 @@
           <label for="import-json">Paste JSON to import</label>
           <textarea
             id="import-json"
-            placeholder='{"schemeName":"...","indicators":[...],"options":[...],"scores":{...}}'
+            placeholder='{"schemeName":"...","indicators":[{"id","name","weight"}],"options":[...],"scores":{...}}'
             spellcheck="false"
           ></textarea>
         </div>
@@ -688,7 +765,7 @@
 
   <script>
     /**
-     * @typedef {{ id: string, name: string }} Indicator
+     * @typedef {{ id: string, name: string, weight: number }} Indicator
      * @typedef {{ id: string, name: string }} Option
      * @typedef {Record<string, Record<string, number>>} ScoreMatrix
      * @typedef {{
@@ -805,12 +882,34 @@
       return Number.isFinite(v) ? v : 0;
     }
 
-    /** @param {string} optionId */
+    /** @param {Indicator} ind */
+    function getImportance(ind) {
+      const w = Number(ind.weight);
+      return Number.isFinite(w) && w >= 0 ? w : 0;
+    }
+
+    function totalImportance() {
+      return indicators.reduce((sum, ind) => sum + getImportance(ind), 0);
+    }
+
+    /**
+     * Weighted total: Σ (importance × score).
+     * Minor indicators with low importance cannot dilute a high-importance row.
+     * @param {string} optionId
+     */
     function scoreForOption(optionId) {
       return indicators.reduce(
-        (sum, ind) => sum + getScore(ind.id, optionId),
+        (sum, ind) => sum + getImportance(ind) * getScore(ind.id, optionId),
         0
       );
+    }
+
+    /** @param {number} n */
+    function formatNum(n) {
+      if (!Number.isFinite(n)) return "0";
+      const rounded = Math.round(n * 1000) / 1000;
+      if (Number.isInteger(rounded)) return String(rounded);
+      return String(rounded);
     }
 
     /**
@@ -898,7 +997,12 @@
             continue;
           }
           if (indicatorIds.has(item.id)) continue;
-          nextIndicators.push({ id: item.id, name: String(item.name) });
+          const w = Number(item.weight);
+          nextIndicators.push({
+            id: item.id,
+            name: String(item.name),
+            weight: Number.isFinite(w) && w >= 0 ? w : 1,
+          });
           indicatorIds.add(item.id);
         }
       }
@@ -952,7 +1056,11 @@
     function snapshotCurrent() {
       return {
         schemeName,
-        indicators: indicators.map((i) => ({ ...i })),
+        indicators: indicators.map((i) => ({
+          id: i.id,
+          name: i.name,
+          weight: getImportance(i),
+        })),
         options: options.map((o) => ({ ...o })),
         scores: normalizeScores(indicators, options, scores),
       };
@@ -1112,10 +1220,15 @@
         const empty = document.createElement("div");
         empty.className = "matrix-empty";
         empty.textContent =
-          "Add indicators and options on the left, then enter weights in the table";
+          "Add indicators (with importance) and options, then score each option in the cells";
         matrixWrap.appendChild(empty);
         return;
       }
+
+      const impTotal = totalImportance();
+      const optionColCount = Math.max(options.length, 1);
+      // Indicator + Importance + option columns
+      const colSpanEmpty = optionColCount + 2;
 
       const table = document.createElement("table");
       table.className = "matrix";
@@ -1128,6 +1241,13 @@
       corner.className = "corner";
       corner.textContent = "Indicator";
       headRow.appendChild(corner);
+
+      const impHead = document.createElement("th");
+      impHead.className = "importance-col";
+      impHead.textContent = "Imp.";
+      impHead.title =
+        "Importance of this criterion. Share % = weight / sum(weights)";
+      headRow.appendChild(impHead);
 
       for (const opt of options) {
         const th = document.createElement("th");
@@ -1145,7 +1265,8 @@
 
         const scoreEl = document.createElement("div");
         scoreEl.className = "option-score";
-        scoreEl.textContent = String(scoreForOption(opt.id));
+        scoreEl.textContent = formatNum(scoreForOption(opt.id));
+        scoreEl.title = "Σ (importance × score)";
 
         const del = document.createElement("button");
         del.type = "button";
@@ -1178,7 +1299,7 @@
       if (indicators.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = Math.max(options.length, 1) + 1;
+        td.colSpan = colSpanEmpty;
         td.className = "matrix-empty";
         td.style.border = "none";
         td.textContent = "Add indicators to create rows";
@@ -1187,6 +1308,9 @@
       } else {
         for (const ind of indicators) {
           const tr = document.createElement("tr");
+          const importance = getImportance(ind);
+          const share =
+            impTotal > 0 ? Math.round((importance / impTotal) * 1000) / 10 : 0;
 
           const nameTd = document.createElement("td");
           nameTd.className = "indicator-cell";
@@ -1216,6 +1340,28 @@
           nameTd.appendChild(row);
           tr.appendChild(nameTd);
 
+          const impTd = document.createElement("td");
+          impTd.className = "importance-cell";
+          const impInput = document.createElement("input");
+          impInput.className = "importance-input";
+          impInput.type = "number";
+          impInput.min = "0";
+          impInput.step = "any";
+          impInput.value = String(importance);
+          impInput.title = "Importance (not diluted by adding minor indicators)";
+          impInput.setAttribute("aria-label", "Importance: " + ind.name);
+          impInput.addEventListener("change", () => {
+            setIndicatorWeight(ind.id, impInput.value);
+          });
+          impInput.addEventListener("focus", () => impInput.select());
+          const shareEl = document.createElement("span");
+          shareEl.className = "importance-share";
+          shareEl.textContent = formatNum(share) + "%";
+          shareEl.title = "Share of total importance";
+          impTd.appendChild(impInput);
+          impTd.appendChild(shareEl);
+          tr.appendChild(impTd);
+
           if (options.length === 0) {
             const td = document.createElement("td");
             td.style.color = "var(--muted)";
@@ -1231,6 +1377,7 @@
               input.type = "number";
               input.step = "any";
               input.value = String(getScore(ind.id, opt.id));
+              input.title = "Score for this option (how well it fits the criterion)";
               input.setAttribute("aria-label", ind.name + " / " + opt.name);
               input.addEventListener("change", () => {
                 setScore(ind.id, opt.id, input.value);
@@ -1251,12 +1398,14 @@
         foot.className = "totals-row";
         const label = document.createElement("th");
         label.className = "totals-label";
-        label.textContent = "Total";
+        label.colSpan = 2;
+        label.textContent = "Weighted total";
+        label.title = "Σ (importance × score)";
         foot.appendChild(label);
         for (const opt of options) {
           const td = document.createElement("td");
           td.className = "total-cell";
-          td.textContent = String(scoreForOption(opt.id));
+          td.textContent = formatNum(scoreForOption(opt.id));
           foot.appendChild(td);
         }
         tbody.appendChild(foot);
@@ -1264,6 +1413,13 @@
 
       table.appendChild(tbody);
       matrixWrap.appendChild(table);
+
+      const hint = document.createElement("p");
+      hint.className = "matrix-hint";
+      hint.textContent =
+        "Importance (Imp.) is how much a criterion matters. Cell values are option scores. " +
+        "Total = Σ (importance × score). Adding many low-importance rows barely moves the ranking.";
+      matrixWrap.appendChild(hint);
     }
 
     /**
@@ -1334,7 +1490,7 @@
 
         const val = document.createElement("span");
         val.className = "bar-value";
-        val.textContent = String(s.score);
+        val.textContent = formatNum(s.score);
         bar.appendChild(val);
 
         const label = document.createElement("div");
@@ -1351,18 +1507,18 @@
         const leaders = scoreList.filter((s) => s.score === maxScore);
         if (leaders.length === 1) {
           winnerEl.innerHTML =
-            "Leader: <strong></strong> — " + maxScore + " pts";
+            "Leader: <strong></strong> — " + formatNum(maxScore) + " pts";
           winnerEl.querySelector("strong").textContent = leaders[0].name;
         } else {
           winnerEl.textContent =
             "Tie: " +
             leaders.map((l) => l.name).join(", ") +
             " — " +
-            maxScore +
+            formatNum(maxScore) +
             " pts each";
         }
       } else {
-        winnerEl.textContent = "Enter weights in the matrix cells";
+        winnerEl.textContent = "Set importance and scores in the matrix";
       }
     }
 
@@ -1440,6 +1596,14 @@
       const value = Number.isFinite(n) ? n : 0;
       if (!scores[indicatorId]) scores[indicatorId] = {};
       scores[indicatorId][optionId] = value;
+      render();
+    }
+
+    function setIndicatorWeight(id, raw) {
+      const ind = indicators.find((i) => i.id === id);
+      if (!ind) return;
+      const n = Number(raw);
+      ind.weight = Number.isFinite(n) && n >= 0 ? n : 0;
       render();
     }
 
@@ -1573,17 +1737,21 @@
     indicatorForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const nameInput = document.getElementById("indicator-name");
+      const weightInput = document.getElementById("indicator-weight");
       const name = nameInput.value.trim();
+      const weight = Number(weightInput.value);
       if (!name) return;
+      if (!Number.isFinite(weight) || weight < 0) return;
 
       const id = uid();
-      indicators.push({ id, name });
+      indicators.push({ id, name, weight });
       scores[id] = {};
       for (const opt of options) {
         scores[id][opt.id] = 0;
       }
 
       nameInput.value = "";
+      weightInput.value = "1";
       nameInput.focus();
       render();
     });
