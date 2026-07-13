@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Decision Helper</title>
+  <style>
+    :root,
+    [data-theme="dark"] {
+      --bg: #0f1419;
+      --surface: #1a2332;
+      --surface2: #243044;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9bb4;
+      --accent: #5b9fd4;
+      --accent-hover: #7ab3e0;
+      --success: #3d9b6a;
+      --danger: #c45c5c;
+      --chip: #2a3a52;
+      --unallocated-bg: #141c28;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      --radius: 10px;
+      --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      --btn-primary-text: #0a0e14;
+      --theme-btn-bg: #243044;
+    }
+
+    [data-theme="light"] {
+      --bg: #f0f3f7;
+      --surface: #ffffff;
+      --surface2: #e8eef5;
+      --border: #d0d8e4;
+      --text: #1a2332;
+      --muted: #5a6a80;
+      --accent: #2b7cb8;
+      --accent-hover: #1f6aa0;
+      --success: #2a8a55;
+      --danger: #c04040;
+      --chip: #eef2f8;
+      --unallocated-bg: #f7f9fc;
+      --shadow: 0 4px 16px rgba(20, 40, 70, 0.08);
+      --btn-primary-text: #ffffff;
+      --theme-btn-bg: #e8eef5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    header .header-text h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    header .header-text p {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .theme-toggle {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      background: var(--theme-btn-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--accent);
+    }
+
+    .theme-toggle .icon {
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.25rem;
+      padding: 1.25rem;
+      min-height: calc(100vh - 80px);
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+    }
+
+    .card h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.85rem;
+      font-weight: 600;
+    }
+
+    .field {
+      margin-bottom: 0.75rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+    }
+
+    .field input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    .field input[type="number"]::-webkit-outer-spin-button,
+    .field input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      padding: 0.55rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: var(--btn-primary-text);
+      width: 100%;
+    }
+
+    button.primary:hover {
+      background: var(--accent-hover);
+    }
+
+    button.primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    button.ghost {
+      background: transparent;
+      color: var(--muted);
+      padding: 0.2rem 0.4rem;
+      font-size: 0.75rem;
+    }
+
+    button.ghost:hover {
+      color: var(--danger);
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      min-width: 0;
+    }
+
+    .board-wrap {
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+
+    .board {
+      display: flex;
+      gap: 0.75rem;
+      min-height: 280px;
+      align-items: stretch;
+    }
+
+    .column {
+      flex: 0 0 200px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      min-height: 280px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .column.drag-over {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+
+    .column.unallocated {
+      border-style: dashed;
+      background: var(--unallocated-bg);
+    }
+
+    .column-header {
+      padding: 0.85rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .column-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .column-score {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-top: 0.2rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .column.unallocated .column-score {
+      color: var(--muted);
+    }
+
+    .column-body {
+      flex: 1;
+      padding: 0.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      min-height: 120px;
+    }
+
+    .column-footer {
+      padding: 0.4rem 0.6rem 0.6rem;
+      text-align: right;
+    }
+
+    .chip {
+      background: var(--chip);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem 0.65rem;
+      cursor: grab;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      transition: opacity 0.15s, box-shadow 0.15s, transform 0.1s;
+    }
+
+    .chip:active {
+      cursor: grabbing;
+    }
+
+    .chip.dragging {
+      opacity: 0.4;
+    }
+
+    .chip-name {
+      font-size: 0.85rem;
+      word-break: break-word;
+      flex: 1;
+    }
+
+    .chip-weight {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(91, 159, 212, 0.15);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .empty-hint {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 1.5rem 0.5rem;
+      pointer-events: none;
+    }
+
+    .chart-card h2 {
+      margin-bottom: 1rem;
+    }
+
+    .chart-area {
+      position: relative;
+      height: 220px;
+      display: flex;
+      align-items: flex-end;
+      gap: 0.75rem;
+      padding: 0 0.5rem 1.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bar-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      height: 100%;
+      min-width: 48px;
+      max-width: 120px;
+    }
+
+    .bar {
+      width: 100%;
+      max-width: 64px;
+      border-radius: 6px 6px 2px 2px;
+      min-height: 2px;
+      transition: height 0.35s ease, background 0.2s;
+      position: relative;
+    }
+
+    .bar-value {
+      position: absolute;
+      top: -1.35rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bar-label {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+      word-break: break-word;
+      max-width: 100%;
+      line-height: 1.2;
+    }
+
+    .chart-empty {
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 3rem 1rem;
+      width: 100%;
+    }
+
+    .winner-badge {
+      margin-top: 0.85rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .winner-badge strong {
+      color: var(--success);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-text">
+      <h1>Decision Helper</h1>
+      <p>Создайте показатели с весами, варианты — и распределите показатели drag-and-drop</p>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">
+      <span class="icon" id="theme-icon">☀️</span>
+      <span id="theme-label">Светлая</span>
+    </button>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <section class="card">
+        <h2>Новый показатель</h2>
+        <form id="factor-form">
+          <div class="field">
+            <label for="factor-name">Название</label>
+            <input id="factor-name" type="text" placeholder="Например: цена" required autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="factor-weight">Вес (очки)</label>
+            <input id="factor-weight" type="number" min="1" step="1" value="1" required />
+          </div>
+          <button type="submit" class="primary">Добавить показатель</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Новый вариант</h2>
+        <form id="option-form">
+          <div class="field">
+            <label for="option-name">Название</label>
+            <input id="option-name" type="text" placeholder="Например: квартира А" required autocomplete="off" />
+          </div>
+          <button type="submit" class="primary">Добавить вариант</button>
+        </form>
+      </section>
+    </aside>
+
+    <main class="main">
+      <div class="board-wrap">
+        <div class="board" id="board"></div>
+      </div>
+
+      <section class="card chart-card">
+        <h2>Распределение очков</h2>
+        <div class="chart-area" id="chart"></div>
+        <div class="winner-badge" id="winner"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /** @typedef {{ id: string, name: string, weight: number, optionId: string | null }} Factor */
+    /** @typedef {{ id: string, name: string }} Option */
+
+    // —— Theme ——
+    const themeToggle = document.getElementById("theme-toggle");
+    const themeIcon = document.getElementById("theme-icon");
+    const themeLabel = document.getElementById("theme-label");
+
+    function getPreferredTheme() {
+      const saved = localStorage.getItem("dh-theme");
+      if (saved === "light" || saved === "dark") return saved;
+      return window.matchMedia("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark";
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("dh-theme", theme);
+      // Button shows the *other* theme (what you'll switch to)
+      if (theme === "dark") {
+        themeIcon.textContent = "☀️";
+        themeLabel.textContent = "Светлая";
+      } else {
+        themeIcon.textContent = "🌙";
+        themeLabel.textContent = "Тёмная";
+      }
+    }
+
+    applyTheme(getPreferredTheme());
+
+    themeToggle.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme") || "dark";
+      applyTheme(current === "dark" ? "light" : "dark");
+    });
+
+    const UNALLOCATED = null;
+
+    /** @type {Factor[]} */
+    let factors = [];
+    /** @type {Option[]} */
+    let options = [];
+
+    let dragFactorId = null;
+
+    const boardEl = document.getElementById("board");
+    const chartEl = document.getElementById("chart");
+    const winnerEl = document.getElementById("winner");
+    const factorForm = document.getElementById("factor-form");
+    const optionForm = document.getElementById("option-form");
+
+    const COLORS = [
+      "#5b9fd4",
+      "#3d9b6a",
+      "#d4a05b",
+      "#9b6ad4",
+      "#d45b7a",
+      "#5bc4c4",
+      "#c4d45b",
+      "#d47a5b",
+    ];
+
+    function uid() {
+      return Math.random().toString(36).slice(2, 10);
+    }
+
+    function scoreFor(optionId) {
+      return factors
+        .filter((f) => f.optionId === optionId)
+        .reduce((sum, f) => sum + f.weight, 0);
+    }
+
+    function factorsIn(optionId) {
+      return factors.filter((f) => f.optionId === optionId);
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = "";
+
+      // «Не распределено»
+      boardEl.appendChild(createColumn(null, "Не распределено", true));
+
+      for (const opt of options) {
+        boardEl.appendChild(createColumn(opt.id, opt.name, false));
+      }
+    }
+
+    /**
+     * @param {string | null} optionId
+     * @param {string} title
+     * @param {boolean} isUnallocated
+     */
+    function createColumn(optionId, title, isUnallocated) {
+      const col = document.createElement("div");
+      col.className = "column" + (isUnallocated ? " unallocated" : "");
+      col.dataset.optionId = optionId === null ? "" : optionId;
+
+      const score = scoreFor(optionId);
+      const items = factorsIn(optionId);
+
+      const header = document.createElement("div");
+      header.className = "column-header";
+      header.innerHTML =
+        `<div class="column-title"></div>` +
+        `<div class="column-score">${score}</div>`;
+      header.querySelector(".column-title").textContent = title;
+      col.appendChild(header);
+
+      const body = document.createElement("div");
+      body.className = "column-body";
+
+      if (items.length === 0) {
+        const hint = document.createElement("div");
+        hint.className = "empty-hint";
+        hint.textContent = isUnallocated
+          ? "Добавьте показатели слева"
+          : "Перетащите сюда";
+        body.appendChild(hint);
+      } else {
+        for (const f of items) {
+          body.appendChild(createChip(f));
+        }
+      }
+
+      col.appendChild(body);
+
+      if (!isUnallocated) {
+        const footer = document.createElement("div");
+        footer.className = "column-footer";
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "ghost";
+        del.textContent = "Удалить";
+        del.title = "Удалить вариант";
+        del.addEventListener("click", () => removeOption(optionId));
+        footer.appendChild(del);
+        col.appendChild(footer);
+      }
+
+      // Drop targets
+      col.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        col.classList.add("drag-over");
+      });
+      col.addEventListener("dragleave", (e) => {
+        if (!col.contains(e.relatedTarget)) {
+          col.classList.remove("drag-over");
+        }
+      });
+      col.addEventListener("drop", (e) => {
+        e.preventDefault();
+        col.classList.remove("drag-over");
+        const id = e.dataTransfer.getData("text/plain") || dragFactorId;
+        if (!id) return;
+        moveFactor(id, optionId);
+      });
+
+      return col;
+    }
+
+    /** @param {Factor} f */
+    function createChip(f) {
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.draggable = true;
+      chip.dataset.factorId = f.id;
+
+      const name = document.createElement("span");
+      name.className = "chip-name";
+      name.textContent = f.name;
+
+      const weight = document.createElement("span");
+      weight.className = "chip-weight";
+      weight.textContent = String(f.weight);
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "ghost";
+      del.textContent = "×";
+      del.title = "Удалить показатель";
+      del.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeFactor(f.id);
+      });
+
+      chip.appendChild(name);
+      chip.appendChild(weight);
+      chip.appendChild(del);
+
+      chip.addEventListener("dragstart", (e) => {
+        dragFactorId = f.id;
+        chip.classList.add("dragging");
+        e.dataTransfer.setData("text/plain", f.id);
+        e.dataTransfer.effectAllowed = "move";
+      });
+      chip.addEventListener("dragend", () => {
+        dragFactorId = null;
+        chip.classList.remove("dragging");
+        document.querySelectorAll(".column.drag-over").forEach((el) => {
+          el.classList.remove("drag-over");
+        });
+      });
+
+      return chip;
+    }
+
+    function renderChart() {
+      chartEl.innerHTML = "";
+      winnerEl.textContent = "";
+
+      if (options.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "chart-empty";
+        empty.textContent = "Добавьте варианты, чтобы увидеть сравнение";
+        chartEl.appendChild(empty);
+        return;
+      }
+
+      const scores = options.map((o) => ({
+        id: o.id,
+        name: o.name,
+        score: scoreFor(o.id),
+      }));
+
+      const max = Math.max(...scores.map((s) => s.score), 1);
+
+      scores.forEach((s, i) => {
+        const group = document.createElement("div");
+        group.className = "bar-group";
+
+        const bar = document.createElement("div");
+        bar.className = "bar";
+        const pct = (s.score / max) * 100;
+        bar.style.height = Math.max(pct, s.score > 0 ? 4 : 2) + "%";
+        bar.style.background = COLORS[i % COLORS.length];
+
+        const val = document.createElement("span");
+        val.className = "bar-value";
+        val.textContent = String(s.score);
+        bar.appendChild(val);
+
+        const label = document.createElement("div");
+        label.className = "bar-label";
+        label.textContent = s.name;
+
+        group.appendChild(bar);
+        group.appendChild(label);
+        chartEl.appendChild(group);
+      });
+
+      const maxScore = Math.max(...scores.map((s) => s.score));
+      if (maxScore > 0) {
+        const leaders = scores.filter((s) => s.score === maxScore);
+        if (leaders.length === 1) {
+          winnerEl.innerHTML =
+            "Лидер: <strong></strong> — " + maxScore + " очк.";
+          winnerEl.querySelector("strong").textContent = leaders[0].name;
+        } else {
+          winnerEl.textContent =
+            "Ничья: " +
+            leaders.map((l) => l.name).join(", ") +
+            " — по " +
+            maxScore +
+            " очк.";
+        }
+      } else {
+        winnerEl.textContent = "Распределите показатели по вариантам";
+      }
+    }
+
+    function render() {
+      renderBoard();
+      renderChart();
+    }
+
+    /** @param {string} factorId @param {string | null} optionId */
+    function moveFactor(factorId, optionId) {
+      const f = factors.find((x) => x.id === factorId);
+      if (!f) return;
+      if (f.optionId === optionId) return;
+      f.optionId = optionId;
+      render();
+    }
+
+    function removeFactor(id) {
+      factors = factors.filter((f) => f.id !== id);
+      render();
+    }
+
+    function removeOption(id) {
+      // Показатели из удалённого варианта — обратно в «Не распределено»
+      factors.forEach((f) => {
+        if (f.optionId === id) f.optionId = UNALLOCATED;
+      });
+      options = options.filter((o) => o.id !== id);
+      render();
+    }
+
+    factorForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById("factor-name");
+      const weightInput = document.getElementById("factor-weight");
+      const name = nameInput.value.trim();
+      const weight = Number(weightInput.value);
+
+      if (!name || !Number.isFinite(weight) || weight <= 0) return;
+
+      factors.push({
+        id: uid(),
+        name,
+        weight: Math.round(weight),
+        optionId: UNALLOCATED,
+      });
+
+      nameInput.value = "";
+      weightInput.value = "1";
+      nameInput.focus();
+      render();
+    });
+
+    optionForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById("option-name");
+      const name = nameInput.value.trim();
+      if (!name) return;
+
+      options.push({ id: uid(), name });
+      nameInput.value = "";
+      nameInput.focus();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
