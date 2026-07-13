@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -206,6 +206,17 @@
       cursor: not-allowed;
     }
 
+    button.secondary {
+      background: var(--theme-btn-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      width: 100%;
+    }
+
+    button.secondary:hover {
+      border-color: var(--accent);
+    }
+
     button.ghost {
       background: transparent;
       color: var(--muted);
@@ -214,6 +225,47 @@
     }
 
     button.ghost:hover {
+      color: var(--danger);
+    }
+
+    .btn-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .field textarea {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.8rem;
+      font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+      outline: none;
+      resize: vertical;
+      min-height: 88px;
+      line-height: 1.35;
+      transition: border-color 0.15s;
+    }
+
+    .field textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .status-msg {
+      font-size: 0.78rem;
+      margin-top: 0.55rem;
+      min-height: 1.1em;
+      color: var(--muted);
+    }
+
+    .status-msg.ok {
+      color: var(--success);
+    }
+
+    .status-msg.err {
       color: var(--danger);
     }
 
@@ -422,40 +474,55 @@
   <header>
     <div class="header-text">
       <h1>Decision Helper</h1>
-      <p>Создайте показатели с весами, варианты — и распределите показатели drag-and-drop</p>
+      <p>Create weighted advantages and options, then drag advantages into options</p>
     </div>
-    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Переключить тему">
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
       <span class="icon" id="theme-icon">☀️</span>
-      <span id="theme-label">Светлая</span>
+      <span id="theme-label">Light</span>
     </button>
   </header>
 
   <div class="layout">
     <aside class="sidebar">
       <section class="card">
-        <h2>Новый показатель</h2>
+        <h2>New advantage</h2>
         <form id="factor-form">
           <div class="field">
-            <label for="factor-name">Название</label>
-            <input id="factor-name" type="text" placeholder="Например: цена" required autocomplete="off" />
+            <label for="factor-name">Name</label>
+            <input id="factor-name" type="text" placeholder="e.g. price" required autocomplete="off" />
           </div>
           <div class="field">
-            <label for="factor-weight">Вес (очки)</label>
+            <label for="factor-weight">Weight (points)</label>
             <input id="factor-weight" type="number" min="1" step="1" value="1" required />
           </div>
-          <button type="submit" class="primary">Добавить показатель</button>
+          <button type="submit" class="primary">Add advantage</button>
         </form>
       </section>
 
       <section class="card">
-        <h2>Новый вариант</h2>
+        <h2>New option</h2>
         <form id="option-form">
           <div class="field">
-            <label for="option-name">Название</label>
-            <input id="option-name" type="text" placeholder="Например: квартира А" required autocomplete="off" />
+            <label for="option-name">Name</label>
+            <input id="option-name" type="text" placeholder="e.g. apartment A" required autocomplete="off" />
           </div>
-          <button type="submit" class="primary">Добавить вариант</button>
+          <button type="submit" class="primary">Add option</button>
         </form>
+      </section>
+
+      <section class="card">
+        <h2>Share</h2>
+        <div class="btn-row">
+          <button type="button" class="secondary" id="export-btn">Copy JSON</button>
+        </div>
+        <div class="field" style="margin-top: 0.85rem; margin-bottom: 0.5rem">
+          <label for="import-json">Paste JSON to import</label>
+          <textarea id="import-json" placeholder='{"options":[...],"factors":[...]}' spellcheck="false"></textarea>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="primary" id="import-btn">Import</button>
+        </div>
+        <div class="status-msg" id="share-status" role="status"></div>
       </section>
     </aside>
 
@@ -465,7 +532,7 @@
       </div>
 
       <section class="card chart-card">
-        <h2>Распределение очков</h2>
+        <h2>Score distribution</h2>
         <div class="chart-area" id="chart"></div>
         <div class="winner-badge" id="winner"></div>
       </section>
@@ -495,10 +562,10 @@
       // Button shows the *other* theme (what you'll switch to)
       if (theme === "dark") {
         themeIcon.textContent = "☀️";
-        themeLabel.textContent = "Светлая";
+        themeLabel.textContent = "Light";
       } else {
         themeIcon.textContent = "🌙";
-        themeLabel.textContent = "Тёмная";
+        themeLabel.textContent = "Dark";
       }
     }
 
@@ -510,11 +577,122 @@
     });
 
     const UNALLOCATED = null;
+    const STATE_KEY = "dh-state";
 
     /** @type {Factor[]} */
     let factors = [];
     /** @type {Option[]} */
     let options = [];
+
+    /**
+     * Parse and normalize a decision payload.
+     * @param {unknown} data
+     * @returns {{ factors: Factor[], options: Option[] }}
+     */
+    function parseDecisionData(data) {
+      if (!data || typeof data !== "object") {
+        throw new Error("Invalid JSON: expected an object");
+      }
+      const obj = /** @type {Record<string, unknown>} */ (data);
+      if (!Array.isArray(obj.options) && !Array.isArray(obj.factors)) {
+        throw new Error('Expected "options" and/or "factors" arrays');
+      }
+
+      /** @type {Option[]} */
+      const nextOptions = [];
+      const optionIds = new Set();
+
+      if (Array.isArray(obj.options)) {
+        for (const o of obj.options) {
+          if (
+            !o ||
+            typeof o !== "object" ||
+            typeof o.id !== "string" ||
+            typeof o.name !== "string" ||
+            !o.name.trim()
+          ) {
+            continue;
+          }
+          if (optionIds.has(o.id)) continue;
+          nextOptions.push({ id: o.id, name: String(o.name) });
+          optionIds.add(o.id);
+        }
+      }
+
+      /** @type {Factor[]} */
+      const nextFactors = [];
+      const factorIds = new Set();
+
+      if (Array.isArray(obj.factors)) {
+        for (const f of obj.factors) {
+          if (
+            !f ||
+            typeof f !== "object" ||
+            typeof f.id !== "string" ||
+            typeof f.name !== "string" ||
+            !f.name.trim() ||
+            !Number.isFinite(Number(f.weight)) ||
+            Number(f.weight) <= 0
+          ) {
+            continue;
+          }
+          if (factorIds.has(f.id)) continue;
+          let optionId =
+            f.optionId === undefined || f.optionId === null
+              ? null
+              : String(f.optionId);
+          if (optionId !== null && !optionIds.has(optionId)) {
+            optionId = null;
+          }
+          nextFactors.push({
+            id: f.id,
+            name: String(f.name),
+            weight: Math.round(Number(f.weight)),
+            optionId,
+          });
+          factorIds.add(f.id);
+        }
+      }
+
+      return { factors: nextFactors, options: nextOptions };
+    }
+
+    /** @param {{ factors: Factor[], options: Option[] }} state */
+    function applyState(state) {
+      factors = state.factors;
+      options = state.options;
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STATE_KEY);
+        if (!raw) return;
+        applyState(parseDecisionData(JSON.parse(raw)));
+      } catch {
+        factors = [];
+        options = [];
+      }
+    }
+
+    function getExportPayload() {
+      return {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        options,
+        factors,
+      };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(
+          STATE_KEY,
+          JSON.stringify({ factors, options })
+        );
+      } catch {
+        // Quota exceeded or private mode — ignore
+      }
+    }
 
     let dragFactorId = null;
 
@@ -523,6 +701,25 @@
     const winnerEl = document.getElementById("winner");
     const factorForm = document.getElementById("factor-form");
     const optionForm = document.getElementById("option-form");
+    const exportBtn = document.getElementById("export-btn");
+    const importBtn = document.getElementById("import-btn");
+    const importJson = document.getElementById("import-json");
+    const shareStatus = document.getElementById("share-status");
+
+    let statusTimer = null;
+
+    /** @param {string} text @param {"ok"|"err"|""} kind */
+    function setShareStatus(text, kind) {
+      shareStatus.textContent = text;
+      shareStatus.className = "status-msg" + (kind ? " " + kind : "");
+      clearTimeout(statusTimer);
+      if (text) {
+        statusTimer = setTimeout(() => {
+          shareStatus.textContent = "";
+          shareStatus.className = "status-msg";
+        }, 3500);
+      }
+    }
 
     const COLORS = [
       "#5b9fd4",
@@ -552,8 +749,8 @@
     function renderBoard() {
       boardEl.innerHTML = "";
 
-      // «Не распределено»
-      boardEl.appendChild(createColumn(null, "Не распределено", true));
+      // Unassigned
+      boardEl.appendChild(createColumn(null, "Unassigned", true));
 
       for (const opt of options) {
         boardEl.appendChild(createColumn(opt.id, opt.name, false));
@@ -588,8 +785,8 @@
         const hint = document.createElement("div");
         hint.className = "empty-hint";
         hint.textContent = isUnallocated
-          ? "Добавьте показатели слева"
-          : "Перетащите сюда";
+          ? "Add advantages on the left"
+          : "Drop here";
         body.appendChild(hint);
       } else {
         for (const f of items) {
@@ -605,8 +802,8 @@
         const del = document.createElement("button");
         del.type = "button";
         del.className = "ghost";
-        del.textContent = "Удалить";
-        del.title = "Удалить вариант";
+        del.textContent = "Delete";
+        del.title = "Delete option";
         del.addEventListener("click", () => removeOption(optionId));
         footer.appendChild(del);
         col.appendChild(footer);
@@ -653,7 +850,7 @@
       del.type = "button";
       del.className = "ghost";
       del.textContent = "×";
-      del.title = "Удалить показатель";
+      del.title = "Delete advantage";
       del.addEventListener("click", (e) => {
         e.stopPropagation();
         removeFactor(f.id);
@@ -687,7 +884,7 @@
       if (options.length === 0) {
         const empty = document.createElement("div");
         empty.className = "chart-empty";
-        empty.textContent = "Добавьте варианты, чтобы увидеть сравнение";
+        empty.textContent = "Add options to see the comparison";
         chartEl.appendChild(empty);
         return;
       }
@@ -729,24 +926,25 @@
         const leaders = scores.filter((s) => s.score === maxScore);
         if (leaders.length === 1) {
           winnerEl.innerHTML =
-            "Лидер: <strong></strong> — " + maxScore + " очк.";
+            "Leader: <strong></strong> — " + maxScore + " pts";
           winnerEl.querySelector("strong").textContent = leaders[0].name;
         } else {
           winnerEl.textContent =
-            "Ничья: " +
+            "Tie: " +
             leaders.map((l) => l.name).join(", ") +
-            " — по " +
+            " — " +
             maxScore +
-            " очк.";
+            " pts each";
         }
       } else {
-        winnerEl.textContent = "Распределите показатели по вариантам";
+        winnerEl.textContent = "Assign advantages to options";
       }
     }
 
     function render() {
       renderBoard();
       renderChart();
+      saveState();
     }
 
     /** @param {string} factorId @param {string | null} optionId */
@@ -764,7 +962,7 @@
     }
 
     function removeOption(id) {
-      // Показатели из удалённого варианта — обратно в «Не распределено»
+      // Advantages from deleted option go back to Unassigned
       factors.forEach((f) => {
         if (f.optionId === id) f.optionId = UNALLOCATED;
       });
@@ -806,6 +1004,78 @@
       render();
     });
 
+    exportBtn.addEventListener("click", async () => {
+      const json = JSON.stringify(getExportPayload(), null, 2);
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(json);
+        } else {
+          // Fallback for older browsers / non-secure contexts
+          importJson.value = json;
+          importJson.focus();
+          importJson.select();
+          const ok = document.execCommand("copy");
+          if (!ok) throw new Error("copy failed");
+        }
+        setShareStatus("JSON copied to clipboard", "ok");
+      } catch {
+        importJson.value = json;
+        importJson.focus();
+        importJson.select();
+        setShareStatus("Could not copy — JSON is in the field below", "err");
+      }
+    });
+
+    importBtn.addEventListener("click", () => {
+      const raw = importJson.value.trim();
+      if (!raw) {
+        setShareStatus("Paste JSON first", "err");
+        return;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        setShareStatus("Invalid JSON syntax", "err");
+        return;
+      }
+
+      try {
+        const state = parseDecisionData(data);
+        if (state.options.length === 0 && state.factors.length === 0) {
+          setShareStatus("No valid options or advantages found", "err");
+          return;
+        }
+
+        const hasCurrent = options.length > 0 || factors.length > 0;
+        if (hasCurrent) {
+          const ok = window.confirm(
+            "Import will replace your current board. Continue?"
+          );
+          if (!ok) return;
+        }
+
+        applyState(state);
+        render();
+        importJson.value = "";
+        setShareStatus(
+          "Imported: " +
+            state.options.length +
+            " options, " +
+            state.factors.length +
+            " advantages",
+          "ok"
+        );
+      } catch (err) {
+        setShareStatus(
+          err instanceof Error ? err.message : "Import failed",
+          "err"
+        );
+      }
+    });
+
+    loadState();
     render();
   </script>
 </body>
