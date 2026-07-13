@@ -382,10 +382,24 @@
       opacity: 0.4;
     }
 
+    .chip.editing {
+      cursor: default;
+      flex-wrap: wrap;
+    }
+
     .chip-name {
       font-size: 0.85rem;
       word-break: break-word;
       flex: 1;
+      min-width: 0;
+      border-radius: 4px;
+      padding: 0.1rem 0.15rem;
+      margin: -0.1rem -0.15rem;
+    }
+
+    .chip-name:hover,
+    .chip-weight:hover {
+      outline: 1px dashed var(--border);
     }
 
     .chip-weight {
@@ -397,6 +411,35 @@
       border-radius: 4px;
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
+      cursor: text;
+    }
+
+    .chip-name {
+      cursor: text;
+    }
+
+    .chip-edit-input {
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      padding: 0.2rem 0.35rem;
+      outline: none;
+      min-width: 0;
+    }
+
+    .chip-edit-input.name {
+      flex: 1;
+      width: 100%;
+    }
+
+    .chip-edit-input.weight {
+      width: 3.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-align: center;
     }
 
     .empty-hint {
@@ -507,6 +550,10 @@
           <div class="field">
             <label for="factor-weight">Weight (points)</label>
             <input id="factor-weight" type="number" min="1" step="1" value="1" required />
+          </div>
+          <div class="field">
+            <label for="factor-blocks">Blocks</label>
+            <input id="factor-blocks" type="number" min="1" step="1" value="1" required title="How many copies to create — one per option that can share this advantage" />
           </div>
           <button type="submit" class="primary">Add advantage</button>
         </form>
@@ -846,6 +893,30 @@
       return col;
     }
 
+    /**
+     * @param {string} factorId
+     * @param {{ name?: string, weight?: number }} patch
+     */
+    function updateFactor(factorId, patch) {
+      const f = factors.find((x) => x.id === factorId);
+      if (!f) return false;
+
+      if (typeof patch.name === "string") {
+        const name = patch.name.trim();
+        if (!name) return false;
+        f.name = name;
+      }
+
+      if (patch.weight !== undefined) {
+        const w = Math.round(Number(patch.weight));
+        if (!Number.isFinite(w) || w <= 0) return false;
+        f.weight = w;
+      }
+
+      render();
+      return true;
+    }
+
     /** @param {Factor} f */
     function createChip(f) {
       const chip = document.createElement("div");
@@ -856,10 +927,12 @@
       const name = document.createElement("span");
       name.className = "chip-name";
       name.textContent = f.name;
+      name.title = "Double-click to edit name";
 
       const weight = document.createElement("span");
       weight.className = "chip-weight";
       weight.textContent = String(f.weight);
+      weight.title = "Double-click to edit weight";
 
       const del = document.createElement("button");
       del.type = "button";
@@ -875,7 +948,107 @@
       chip.appendChild(weight);
       chip.appendChild(del);
 
+      /**
+       * @param {"name"|"weight"} field
+       * @param {HTMLElement} displayEl
+       */
+      function startEdit(field, displayEl) {
+        if (chip.classList.contains("editing")) return;
+
+        chip.classList.add("editing");
+        chip.draggable = false;
+
+        const input = document.createElement("input");
+        input.className =
+          "chip-edit-input " + (field === "name" ? "name" : "weight");
+        input.type = field === "weight" ? "number" : "text";
+        if (field === "weight") {
+          input.min = "1";
+          input.step = "1";
+          input.value = String(f.weight);
+        } else {
+          input.value = f.name;
+        }
+
+        displayEl.replaceWith(input);
+        input.focus();
+        input.select();
+
+        let finished = false;
+
+        function cleanup() {
+          chip.classList.remove("editing");
+          chip.draggable = true;
+        }
+
+        function cancel() {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          render();
+        }
+
+        function commit() {
+          if (finished) return;
+          finished = true;
+
+          if (field === "name") {
+            const next = input.value.trim();
+            if (!next || next === f.name) {
+              cleanup();
+              render();
+              return;
+            }
+            updateFactor(f.id, { name: next });
+          } else {
+            const next = Math.round(Number(input.value));
+            if (!Number.isFinite(next) || next <= 0 || next === f.weight) {
+              cleanup();
+              render();
+              return;
+            }
+            updateFactor(f.id, { weight: next });
+          }
+        }
+
+        input.addEventListener("keydown", (e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            cancel();
+          }
+        });
+
+        input.addEventListener("mousedown", (e) => e.stopPropagation());
+        input.addEventListener("click", (e) => e.stopPropagation());
+        input.addEventListener("dragstart", (e) => e.preventDefault());
+
+        // Defer blur so a click on delete / elsewhere still works
+        input.addEventListener("blur", () => {
+          setTimeout(commit, 0);
+        });
+      }
+
+      name.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        startEdit("name", name);
+      });
+
+      weight.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        startEdit("weight", weight);
+      });
+
       chip.addEventListener("dragstart", (e) => {
+        if (chip.classList.contains("editing")) {
+          e.preventDefault();
+          return;
+        }
         dragFactorId = f.id;
         chip.classList.add("dragging");
         e.dataTransfer.setData("text/plain", f.id);
@@ -989,20 +1162,27 @@
       e.preventDefault();
       const nameInput = document.getElementById("factor-name");
       const weightInput = document.getElementById("factor-weight");
+      const blocksInput = document.getElementById("factor-blocks");
       const name = nameInput.value.trim();
       const weight = Number(weightInput.value);
+      const blocks = Math.round(Number(blocksInput.value));
 
       if (!name || !Number.isFinite(weight) || weight <= 0) return;
+      if (!Number.isFinite(blocks) || blocks < 1) return;
 
-      factors.push({
-        id: uid(),
-        name,
-        weight: Math.round(weight),
-        optionId: UNALLOCATED,
-      });
+      const w = Math.round(weight);
+      for (let i = 0; i < blocks; i++) {
+        factors.push({
+          id: uid(),
+          name,
+          weight: w,
+          optionId: UNALLOCATED,
+        });
+      }
 
       nameInput.value = "";
       weightInput.value = "1";
+      blocksInput.value = "1";
       nameInput.focus();
       render();
     });
